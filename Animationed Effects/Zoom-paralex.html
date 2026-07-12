@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zoom Parallax – Correct Layout</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: #000;
+      color: #fff;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    /* ---------- Hero ---------- */
+    .hero {
+      position: relative;
+      height: 50vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      z-index: 1;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: 50%;
+      width: 120vmin;
+      height: 120vmin;
+      transform: translateX(-50%);
+      border-radius: 50%;
+      background: radial-gradient(ellipse at center, rgba(255,255,255,0.1), transparent 50%);
+      filter: blur(30px);
+      pointer-events: none;
+    }
+    .hero h1 {
+      text-align: center;
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 700;
+    }
+
+    /* ---------- Zoom Parallax ---------- */
+    .zoom-section {
+      position: relative;
+      height: 300vh;
+      width: 100%;
+    }
+
+    .sticky-container {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    /* Wrapper – full‑size, flex centred (motion.div equivalent) */
+    .img-wrapper {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      will-change: transform;
+    }
+
+    /* Inner div – always relative, centred by flex; overrides shift it */
+    .img-inner {
+      position: relative;
+      height: 25vh;
+      width: 25vw;
+    }
+    .img-inner img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* ---------- Specific offsets (all relative) ---------- */
+    .img-inner.idx-1 {
+      top: -30vh;
+      left: 5vw;
+      height: 30vh;
+      width: 35vw;
+    }
+    .img-inner.idx-2 {
+      top: -10vh;
+      left: -25vw;
+      height: 45vh;
+      width: 20vw;
+    }
+    .img-inner.idx-3 {
+      left: 27.5vw;      /* top remains 0 (centered vertically) */
+      height: 25vh;
+      width: 25vw;
+    }
+    .img-inner.idx-4 {
+      top: 27.5vh;
+      left: 5vw;
+      height: 25vh;
+      width: 20vw;
+    }
+    .img-inner.idx-5 {
+      top: 27.5vh;
+      left: -22.5vw;
+      height: 25vh;
+      width: 30vw;
+    }
+    .img-inner.idx-6 {
+      top: 22.5vh;
+      left: 25vw;
+      height: 15vh;
+      width: 15vw;
+    }
+
+    /* Stacking order */
+    .img-wrapper:nth-child(1) { z-index: 1; }
+    .img-wrapper:nth-child(2) { z-index: 2; }
+    .img-wrapper:nth-child(3) { z-index: 3; }
+    .img-wrapper:nth-child(4) { z-index: 4; }
+    .img-wrapper:nth-child(5) { z-index: 5; }
+    .img-wrapper:nth-child(6) { z-index: 6; }
+    .img-wrapper:nth-child(7) { z-index: 7; }
+
+    .spacer { height: 50vh; }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <h1>Scroll Down for Zoom Parallax</h1>
+    </section>
+
+    <div class="zoom-section" id="zoomSection">
+      <div class="sticky-container" id="stickyContainer">
+        <!-- Images injected by JS -->
+      </div>
+    </div>
+  <div class="spacer"></div>
+ 
+  </main>
+
+  <script>
+    (function() {
+      const images = [
+        { src: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1280&h=720&fit=crop&crop=entropy&auto=format&q=80', alt: 'Modern architecture building' },
+        { src: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=1280&h=720&fit=crop&crop=entropy&auto=format&q=80', alt: 'Urban cityscape at sunset' },
+        { src: 'https://images.unsplash.com/photo-1557683316-973673baf926?w=800&h=800&fit=crop&crop=entropy&auto=format&q=80', alt: 'Abstract geometric pattern' },
+        { src: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1280&h=720&fit=crop&crop=entropy&auto=format&q=80', alt: 'Mountain landscape' },
+        { src: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&h=800&fit=crop&crop=entropy&auto=format&q=80', alt: 'Minimalist design elements' },
+        { src: 'https://images.unsplash.com/photo-1439066615861-d1af74d74000?w=1280&h=720&fit=crop&crop=entropy&auto=format&q=80', alt: 'Ocean waves and beach' },
+        { src: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1280&h=720&fit=crop&crop=entropy&auto=format&q=80', alt: 'Forest trees and sunlight' },
+      ];
+
+      const stickyContainer = document.getElementById('stickyContainer');
+      const zoomSection = document.getElementById('zoomSection');
+
+      const scaleTargets = [4, 5, 6, 5, 6, 8, 9];
+
+      // Build DOM
+      images.forEach((imgData, index) => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'img-wrapper';
+
+        const inner = document.createElement('div');
+        inner.className = `img-inner idx-${index}`;
+
+        const img = document.createElement('img');
+        img.src = imgData.src;
+        img.alt = imgData.alt;
+        img.loading = 'lazy';
+
+        inner.appendChild(img);
+        wrapper.appendChild(inner);
+        stickyContainer.appendChild(wrapper);
+      });
+
+      const wrappers = document.querySelectorAll('.img-wrapper');
+
+      function mapRange(value, inMin, inMax, outMin, outMax) {
+        return ((value - inMin) * (outMax - outMin)) / (inMax - inMin) + outMin;
+      }
+
+      function updateScales() {
+        const containerRect = zoomSection.getBoundingClientRect();
+        const viewH = window.innerHeight;
+        const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+
+        const containerTop = scrollY + containerRect.top;
+        const start = containerTop;
+        const end = containerTop + containerRect.height - viewH;
+        let progress = (scrollY - start) / (end - start);
+        progress = Math.max(0, Math.min(1, progress));
+
+        wrappers.forEach((wrapper, i) => {
+          const scaleTarget = scaleTargets[i];
+          const scale = mapRange(progress, 0, 1, 1, scaleTarget);
+          wrapper.style.transform = `scale(${scale})`;
+        });
+      }
+
+      let ticking = false;
+      window.addEventListener('scroll', () => {
+        if (!ticking) {
+          requestAnimationFrame(() => {
+            updateScales();
+            ticking = false;
+          });
+          ticking = true;
+        }
+      }, { passive: true });
+
+      updateScales();
+      window.addEventListener('resize', updateScales);
+    })();
+  </script>
+</body>
+</html>
